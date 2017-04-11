@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"strconv"
 	"time"
+	"crypto/tls"
 
 	"github.com/upfluence/sensu-go/Godeps/_workspace/src/github.com/streadway/amqp"
 	"github.com/upfluence/sensu-go/Godeps/_workspace/src/github.com/upfluence/goutils/log"
@@ -114,28 +115,40 @@ func (t *RabbitMQTransport) Connect() error {
 
 		log.Noticef("Trying to connect to URI: %s", uri)
 
-		// TODO: Add SSL support via amqp.DialTLS
+		c := amqp.Config{
+			Heartbeat: 10 * time.Second, // amqp.defaultHeartbeat
+		}
 
-		if heartbeatString := config.Heartbeat.String(); heartbeatString != "" {
-			var heartbeat time.Duration
-			heartbeat, err = time.ParseDuration(heartbeatString + "s")
+		if config.Heartbeat.String()!= "" {
+			c.Heartbeat, err = time.ParseDuration(config.Heartbeat.String() + "s")
 
 			if err != nil {
 				log.Warningf(
 					"Failed to parse the heartbeat value \"%s\": %s",
-					heartbeat,
+					c.Heartbeat,
 					err.Error(),
 				)
 				continue
 			}
-
-			t.Connection, err = t.dialerConfig(
-				uri,
-				amqp.Config{Heartbeat: heartbeat},
-			)
-		} else {
-			t.Connection, err = t.dialer(uri)
 		}
+
+		if config.Ssl.CertChainFile != "" && config.Ssl.PrivateKeyFile != "" {
+
+			certs, err := tls.LoadX509KeyPair(config.Ssl.CertChainFile, config.Ssl.PrivateKeyFile)
+			if err != nil {
+				log.Errorf("Failed to load ssl key/cert: %s", err.Error())
+				continue
+			}
+
+			// Skip tls verify as non matching cert common names are valid in sensu proper.
+			// Perhaps this should be a config option.
+			c.TLSClientConfig = &tls.Config{
+				Certificates: []tls.Certificate{certs},
+				InsecureSkipVerify: true,
+			}
+		}
+
+		t.Connection, err = t.dialerConfig(uri, c)
 
 		if err != nil {
 			log.Warningf("Failed to connect to URI \"%s\": %s", uri, err.Error())

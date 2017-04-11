@@ -95,7 +95,7 @@ var transportConfigErrorTestScenarios = []struct {
 	},
 	{
 		"amqp://example.com::",
-		errors.New("Failed to separate the host name from the port: too many colons in address example.com::"),
+		errors.New("Failed to separate the host name from the port: address example.com::: too many colons in address"),
 	},
 	{
 		"amqp://example.com:5672",

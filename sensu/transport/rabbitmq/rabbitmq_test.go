@@ -121,7 +121,7 @@ var transportConnectTestScenarios = []struct {
 }{
 	{
 		getDummyTransportConfig(0, 0),
-		time.Duration(0),
+		10 * time.Second,
 		0,
 	},
 	{
@@ -219,11 +219,16 @@ func mockAMQPDialerError(url string) (AMQPConnection, error) {
 	return nil, errFailedToConnect
 }
 
+func mockAMQPDialerConfigError(url string, conf amqp.Config) (AMQPConnection, error) {
+	return nil, errFailedToConnect
+}
+
 func TestTransportConnectError(t *testing.T) {
 	transport := &RabbitMQTransport{
 		ClosingChannel: make(chan bool),
 		Configs:        []*TransportConfig{getDummyTransportConfig(0, 0)},
 		dialer:         mockAMQPDialerError,
+		dialerConfig:   mockAMQPDialerConfigError,
 	}
 
 	err := transport.Connect()
@@ -236,6 +241,7 @@ func TestTransportSubscribe(t *testing.T) {
 		ClosingChannel: make(chan bool),
 		Configs:        []*TransportConfig{getDummyTransportConfig(0, 0)},
 		dialer:         mockAMQPDialer,
+		dialerConfig:   mockAMQPDialerConfig,
 	}
 
 	err := transport.Connect()
