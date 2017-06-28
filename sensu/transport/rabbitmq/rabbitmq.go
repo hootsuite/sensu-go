@@ -8,8 +8,8 @@ import (
 	"time"
 	"crypto/tls"
 
-	"github.com/upfluence/sensu-go/Godeps/_workspace/src/github.com/streadway/amqp"
-	"github.com/upfluence/sensu-go/Godeps/_workspace/src/github.com/upfluence/goutils/log"
+	"github.com/streadway/amqp"
+	"github.com/upfluence/goutils/log"
 )
 
 // AMQPChannel is an interface over amqp.Channel
